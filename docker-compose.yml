@@ -1,0 +1,79 @@
+networks:
+  dev:
+  prod:
+
+
+volumes:
+  dev-db:
+  prod-db:
+
+
+services:
+  dev-kc:
+    image: quay.io/keycloak/keycloak:18.0.2
+    container_name: "dev-kc"
+    command: start-dev
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB=postgres
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=keycloak
+      - KC_DB_URL=jdbc:postgresql://dev-db:5432/keycloak
+    volumes:
+      - ./backup:/tmp/export
+    ports:
+      - "1111:8080"
+    networks:
+      - dev
+    depends_on:
+      - dev-db
+
+  dev-db:
+    image: postgres:14.2
+    container_name: "dev-db"
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    ports:
+      - "1112:5432"
+    networks:
+      - dev
+    volumes:
+      - dev-db:/var/lib/postgresql/data
+
+  prod-kc:
+    image: quay.io/keycloak/keycloak:18.0.2
+    container_name: "prod-kc"
+    #command: import --file=/tmp/import/freedomfi-realm.json
+    command: start-dev
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB=postgres
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=keycloak
+      - KC_DB_URL=jdbc:postgresql://prod-db:5432/keycloak
+    volumes:
+      - ./backup:/tmp/import
+    ports:
+      - "2222:8080"
+    networks:
+      - prod
+    depends_on:
+      - prod-db
+
+  prod-db:
+    image: postgres:14.2
+    container_name: "prod-db"
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    ports:
+      - "2223:5432"
+    networks:
+      - prod
+    volumes:
+      - prod-db:/var/lib/postgresql/data
